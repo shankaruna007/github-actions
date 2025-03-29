@@ -1,26 +1,28 @@
-name: Terraform Plan & PR Creation
+name: Terraform Plan
 
 on:
   push:
     branches:
-      - feature/*  # Trigger only for feature branches
+      - "feature/*"
+      - "dev"
 
 jobs:
   terraform-plan:
     runs-on: ubuntu-latest
+
     permissions:
-      contents: write
-      pull-requests: write
+      id-token: write
+      contents: read
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v3
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.TF_USER_AWS_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.TF_USER_AWS_SECRET_KEY }}
+          aws-access-key-id: '${{ secrets.TF_USER_AWS_ACCESS_KEY }}'
+          aws-secret-access-key: '${{ secrets.TF_USER_AWS_SECRET_KEY }}'
           aws-region: us-east-2
 
       - name: Setup Terraform
@@ -28,28 +30,17 @@ jobs:
         with:
           terraform_wrapper: false
 
-      - name: Initialize Terraform
-        run: |
-          cd tf-example
-          terraform init
+      - name: Terraform Init
+        run: terraform init 
+
+      - name: Terraform Validate
+        run: terraform validate
 
       - name: Terraform Plan
-        run: |
-          cd tf-example
-          terraform validate
-          terraform plan -out=tfplan
+        run: terraform plan -out=tfplan
 
-      - name: Upload Terraform Plan Artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v3
         with:
           name: terraform-plan
-          path: tf-example/tfplan
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
-        with:
-          commit-message: "Terraform changes - Review required"
-          branch: terraform-changes
-          title: "Terraform Infrastructure Changes"
-          body: "This PR contains Terraform changes that require approval."
-          base: main
+          path: tfplan
