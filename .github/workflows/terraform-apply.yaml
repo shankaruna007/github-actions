@@ -1,30 +1,27 @@
-name: Terraform Apply (After PR Approval)
+name: Terraform Apply
 
 on:
-  pull_request:
-    types:
-      - closed  # Runs only when PR is merged
+  push:
+    branches:
+      - "main"   # Run only after PR merge into main
 
 jobs:
-  terraform:
-    name: Terraform Apply
+  terraform-apply:
     runs-on: ubuntu-latest
 
-    if: github.event.pull_request.merged == true  # Ensures apply runs only if PR is merged
-
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: '${{ secrets.AWS_ACCESS_KEY_ID }}'
+          aws-secret-access-key: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
+          aws-region: us-east-1
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.TF_USER_AWS_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.TF_USER_AWS_SECRET_KEY }}
-          aws-region: us-east-1
 
       - name: Terraform Init
         run: terraform init

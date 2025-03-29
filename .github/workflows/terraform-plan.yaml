@@ -1,45 +1,39 @@
-name: Terraform Plan (PR Creation)
+name: Terraform Plan
 
 on:
   push:
     branches:
-      - "feature/**"  # Runs on any feature branch
+      - "feature/*"   # Run on feature branches
 
 jobs:
-  terraform:
-    name: Terraform Plan
+  terraform-plan:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: '${{ secrets.AWS_ACCESS_KEY_ID }}'
+          aws-secret-access-key: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
+          aws-region: us-east-1
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.TF_USER_AWS_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.TF_USER_AWS_SECRET_KEY }}
-          aws-region: us-east-1
-
       - name: Terraform Init
         run: terraform init
 
+      - name: Terraform Validate
+        run: terraform validate
+
       - name: Terraform Plan
-        id: plan
         run: terraform plan -out=tfplan
 
-      - name: Save Plan Output
-        run: terraform show -json tfplan > plan-output.json
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+      - name: Save Terraform Plan
+        uses: actions/upload-artifact@v3
         with:
-          title: "Terraform Changes Detected"
-          body: "Terraform changes detected. Please review and approve."
-          branch: "terraform-changes"
-          base: "main"
-          labels: "terraform"
-          delete-branch: true
+          name: terraform-plan
+          path: tfplan
