@@ -1,0 +1,47 @@
+name: Terraform Plan & PR
+
+on:
+  push:
+    branches:
+      - feature/*  # Run only on feature branches (e.g., feature/new-ec2)
+
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: '${{ secrets.TF_USER_AWS_ACCESS_KEY }}'
+          aws-secret-access-key: '${{ secrets.TF_USER_AWS_SECRET_KEY }}'
+          aws-region: us-east-2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          cd tf-example/
+          terraform init
+          terraform validate
+          terraform plan -out=tfplan.txt
+
+      - name: Create Pull Request
+        id: create-pr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          title: "Terraform Changes - EC2 Instance"
+          body: "Terraform plan output:\n```\n$(terraform show -no-color tfplan.txt)\n```"
+          branch: "main"
+          base: "main"
+          delete-branch: true
