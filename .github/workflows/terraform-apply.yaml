@@ -13,7 +13,7 @@ jobs:
     if: github.event.pull_request.merged == true  # Ensures apply runs only if PR is merged
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
       - name: Setup Terraform
