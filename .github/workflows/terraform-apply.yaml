@@ -1,0 +1,39 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches:
+      - main  # Runs only when PR is merged into main
+
+jobs:
+  terraform-apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.TF_USER_AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.TF_USER_AWS_SECRET_KEY }}
+          aws-region: us-east-2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      - name: Download Terraform Plan
+        uses: actions/download-artifact@v3
+        with:
+          name: terraform-plan
+          path: tf-example
+
+      - name: Apply Terraform Plan
+        run: |
+          cd tf-example
+          terraform apply -auto-approve tfplan
