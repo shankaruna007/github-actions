@@ -1,47 +1,45 @@
-name: Terraform Plan & PR
+name: Terraform Plan (PR Creation)
 
 on:
   push:
     branches:
-      - feature/*  # Run only on feature branches (e.g., feature/new-ec2)
+      - "feature/**"  # Triggers when pushing to a feature branch
 
 jobs:
-  terraform-plan:
+  terraform:
+    name: Terraform Plan
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v3
-
-      - name: Setup AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: '${{ secrets.TF_USER_AWS_ACCESS_KEY }}'
-          aws-secret-access-key: '${{ secrets.TF_USER_AWS_SECRET_KEY }}'
-          aws-region: us-east-2
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          terraform_wrapper: false
+          aws-access-key-id: ${{ secrets.TF_USER_AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.TF_USER_AWS_SECRET_KEY }}
+          aws-region: us-east-1
+
+      - name: Terraform Init
+        run: terraform init
 
       - name: Terraform Plan
         id: plan
-        run: |
-          cd tf-example/
-          terraform init
-          terraform validate
-          terraform plan -out=tfplan.txt
+        run: terraform plan -out=tfplan
+
+      - name: Save Plan Output
+        run: terraform show -json tfplan > plan-output.json
 
       - name: Create Pull Request
-        id: create-pr
         uses: peter-evans/create-pull-request@v5
         with:
-          title: "Terraform Changes - EC2 Instance"
-          body: "Terraform plan output:\n```\n$(terraform show -no-color tfplan.txt)\n```"
-          branch: "main"
+          title: "Terraform Changes Detected"
+          body: "Terraform changes detected. Please review and approve."
+          branch: "terraform-changes"
           base: "main"
+          labels: "terraform"
           delete-branch: true
