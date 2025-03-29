@@ -1,7 +1,7 @@
 variable "ec2_name" {
   type        = string
   description = "Name of the EC2 instance"
-  default     = Dev server
+  default     = "MyEC2Instance"
 }
 
 variable "instance_type" {
